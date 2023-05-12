@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.digite.cloud.vcs.GitKafkaTest
+-------------------------------------------------------------------------------
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.685 s - in com.digite.cloud.vcs.GitKafkaTest

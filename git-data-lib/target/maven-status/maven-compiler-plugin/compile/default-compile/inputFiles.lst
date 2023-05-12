@@ -1,0 +1,11 @@
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/model/Git.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/mappings/MappingDataService.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/model/GitRequest.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/model/RequestValidator.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/transformer/TransformerService.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/resource/GitController.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/resource/GitApi.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/model/Commitby.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/model/Repo.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/model/Changes.java
+/home/lpatil/BAAS/GIt ka tamasha/git-service/git-data-lib/src/main/java/com/digite/cloud/vcs/repository/GitRepository.java

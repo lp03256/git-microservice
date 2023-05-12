@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GitHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Git Microservice</a> &gt; <a href="index.source.html" class="el_package">com.digite.cloud.vcs.push</a> &gt; <span class="el_source">GitHandler.java</span></div><h1>GitHandler.java</h1><pre class="source lang-java linenums">package com.digite.cloud.vcs.push;
+
+import com.digite.cloud.vcs.mappings.MappingDataService;
+import com.digite.cloud.vcs.model.*;
+import com.digite.cloud.vcs.repository.GitRepository;
+import com.digite.cloud.vcs.transformer.TransformerService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.logging.Level;
+
+<span class="fc" id="L23">@Slf4j</span>
+@Configuration
+<span class="fc" id="L25">@RequiredArgsConstructor(onConstructor_ = {@Autowired})</span>
+public class GitHandler {
+
+<span class="fc" id="L28">    private final SecureRandom random = new SecureRandom();</span>
+    private final GitRepository repository;
+    private final TransformerService transformerService;
+    private final MappingDataService mappingDataService;
+    public static final String COMMITMESSAGE = &quot;commitMessage&quot;;
+    public static final String CONTENT_COMMITS = &quot;content.commits[&quot;;
+    public static final String CHANGES_ADDED = &quot;changes.added&quot;;
+    public static final String CHANGES_MODIFIED = &quot;changes.modified&quot;;
+    public static final String CHANGES_REMOVED = &quot;changes.removed&quot;;
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Bean
+    public Function&lt;Flux&lt;Message&lt;Map&lt;String, Object&gt;&gt;&gt;, Mono&lt;Void&gt;&gt; handle() {
+<span class="fc" id="L41">        return flux -&gt; flux.flatMap(message -&gt; {</span>
+                    try {
+<span class="fc" id="L43">                        Map&lt;String, String&gt; event = (Map&lt;String, String&gt;) message.getPayload().get( &quot;event&quot; );</span>
+<span class="fc" id="L44">                        Map&lt;String, Object&gt; content = (Map&lt;String, Object&gt;) message.getPayload().get( &quot;content&quot; );</span>
+
+<span class="fc" id="L46">                        log.debug( &quot;Extracted Fabric Event {}&quot;, event );</span>
+<span class="fc" id="L47">                        String app = event.get( &quot;app&quot; );</span>
+
+<span class="fc" id="L49">                        String[] params = new String[4];</span>
+<span class="fc" id="L50">                        params[0] = event.get( &quot;realmId&quot; );</span>
+<span class="fc" id="L51">                        params[1] = event.get( &quot;accountId&quot; );</span>
+<span class="fc" id="L52">                        params[2] = event.get( &quot;ownerId&quot; );</span>
+<span class="fc" id="L53">                        params[3] = app;</span>
+
+<span class="fc" id="L55">                        ArrayList&lt;Object&gt; commits = (ArrayList&lt;Object&gt;) content.get( &quot;commits&quot; );</span>
+<span class="fc" id="L56">                        Map&lt;String, String&gt; transformationMap = null;</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                        for (int i = 0; i &lt; commits.size(); i++) {</span>
+<span class="fc" id="L58">                            transformationMap = mappingDataService.getMappingForProject( app );</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                            if (&quot;gitlab&quot;.equals( app )) {</span>
+<span class="fc" id="L60">                                transformationMap.put( COMMITMESSAGE, CONTENT_COMMITS+i+&quot;].title&quot; );</span>
+<span class="fc" id="L61">                                transformationMap.put( &quot;commitBy.name&quot;, CONTENT_COMMITS+i+&quot;].author.name&quot; );</span>
+<span class="fc" id="L62">                                transformationMap.put( &quot;compare&quot;, CONTENT_COMMITS+i+&quot;].url&quot; );</span>
+                            } else {
+<span class="fc" id="L64">                                transformationMap.put( COMMITMESSAGE, CONTENT_COMMITS+i+&quot;].message&quot; );</span>
+                            }
+
+<span class="fc" id="L67">                            transformationMap.put( &quot;commitTime&quot;, CONTENT_COMMITS+i+&quot;].timestamp&quot; );</span>
+<span class="fc" id="L68">                            transformationMap.put( CHANGES_ADDED, CONTENT_COMMITS+i+&quot;].added&quot; );</span>
+<span class="fc" id="L69">                            transformationMap.put( CHANGES_MODIFIED, CONTENT_COMMITS+i+&quot;].modified&quot; );</span>
+<span class="fc" id="L70">                            transformationMap.put( CHANGES_REMOVED, CONTENT_COMMITS+i+&quot;].removed&quot; );</span>
+
+<span class="fc" id="L72">                            log.debug( &quot;Transformation Map {}&quot;, transformationMap );</span>
+
+<span class="fc" id="L74">                            Map&lt;String, String&gt; result = transformerService.generateFinalJson(message.getPayload(), transformationMap);</span>
+<span class="fc" id="L75">                            log.debug( &quot;Result {}&quot;, result );</span>
+
+<span class="fc" id="L77">                            saveDatainMongo(result, params);</span>
+
+                        }
+
+<span class="nc" id="L81">                    } catch ( Exception e ) {</span>
+<span class="nc" id="L82">                        log.error( e.getMessage() );</span>
+<span class="nc" id="L83">                        return Mono.error(e);</span>
+<span class="fc" id="L84">                    }</span>
+
+
+<span class="fc" id="L87">                    return Mono.just( GitExecution.builder().payload(message.getPayload()).build() );</span>
+                })
+<span class="fc" id="L89">                .log(this.getClass().getName(), Level.FINE)</span>
+<span class="pc" id="L90">                .onErrorContinue( (error, item)-&gt; log.error(&quot;Error in GitHandler chain: &quot; + error.getMessage() + &quot; &quot; + item) )</span>
+<span class="pc" id="L91">                .doOnError(throwable -&gt; log.error(&quot;failed processing message due to error {}&quot;, throwable.getMessage(), throwable))</span>
+<span class="fc" id="L92">                .then();</span>
+    }
+
+    private void saveDatainMongo ( Map&lt;String, String&gt; result, String[] params ) {
+<span class="fc" id="L96">        String itemCode = String.valueOf( result.get(COMMITMESSAGE) ).split( &quot; &quot; )[0];</span>
+
+<span class="fc" id="L98">        GitRequest request = GitRequest.builder()</span>
+<span class="fc" id="L99">                .commitMessage( String.valueOf( result.get(COMMITMESSAGE) ) )</span>
+<span class="fc" id="L100">                .commitTime( String.valueOf( result.get(&quot;commitTime&quot;) ) )</span>
+<span class="fc" id="L101">                .before( String.valueOf( result.get( &quot;before&quot; ) ) )</span>
+<span class="fc" id="L102">                .after( String.valueOf( result.get( &quot;after&quot; ) ) )</span>
+<span class="fc" id="L103">                .before( String.valueOf( result.get( &quot;before&quot; ) ) )</span>
+<span class="fc" id="L104">                .compare( String.valueOf( result.get( &quot;compare&quot; ) ) )</span>
+<span class="fc" id="L105">                .commitName( String.valueOf( result.get( &quot;commitBy.name&quot; ) ) )</span>
+<span class="fc" id="L106">                .commitAvatar( String.valueOf( result.get( &quot;commitBy.avatar&quot; ) ) )</span>
+<span class="fc" id="L107">                .name( String.valueOf( result.get( &quot;repo.name&quot; ) ) )</span>
+<span class="fc" id="L108">                .branch( String.valueOf( result.get( &quot;branch&quot; ) )  )</span>
+<span class="fc" id="L109">                .url( String.valueOf( result.get( &quot;repo.url&quot; ) ) )</span>
+<span class="fc" id="L110">                .description( String.valueOf( result.get( &quot;repo.description&quot; ) ) )</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">                .added(result.get( CHANGES_ADDED ).length() &gt; 0 ?</span>
+<span class="fc" id="L112">                        new ArrayList&lt;&gt;( Arrays.asList(result.get( CHANGES_ADDED ).split(&quot;,&quot;))) :  new ArrayList&lt;&gt;()  )</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">                .modified(result.get( CHANGES_MODIFIED ).length() &gt; 0 ?</span>
+<span class="fc" id="L114">                        new ArrayList&lt;&gt;( Arrays.asList(result.get(CHANGES_MODIFIED ).split(&quot;,&quot;))) :  new ArrayList&lt;&gt;()  )</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">                .removed(result.get( CHANGES_REMOVED ).length() &gt; 0 ?</span>
+<span class="pc" id="L116">                        new ArrayList&lt;&gt;( Arrays.asList(result.get( CHANGES_REMOVED ).split(&quot;,&quot;))) : new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L117">                .build();</span>
+
+<span class="fc" id="L119">        repository.save( Git.builder()</span>
+<span class="fc" id="L120">                .itemCode( itemCode )</span>
+<span class="fc" id="L121">                .accountId(params[1])</span>
+<span class="fc" id="L122">                .ownerId(params[2])</span>
+<span class="fc" id="L123">                .realmId(params[0])</span>
+<span class="fc" id="L124">                .app( params[3] )</span>
+<span class="fc" id="L125">                .event( &quot;push&quot; )</span>
+<span class="fc" id="L126">                .gitId(String.join(&quot;-&quot;, &quot;W&quot;, String.valueOf(random.nextLong(10000000L, 99999999L))))</span>
+<span class="fc" id="L127">                .commitMessage( request.getCommitMessage())</span>
+<span class="fc" id="L128">                .commitTime( request.getCommitTime() )</span>
+<span class="fc" id="L129">                .changes( new Changes(request.getAdded().toArray( new String[0] ), request.getModified().toArray( new String[0] ),</span>
+<span class="fc" id="L130">                        request.getRemoved().toArray( new String[0] ) ) )</span>
+<span class="fc" id="L131">                .repo( new Repo( request.getName(), request.getUrl(), request.getDescription()) )</span>
+<span class="fc" id="L132">                .commitBy( new Commitby( request.getCommitName(), request.getCommitAvatar() ) )</span>
+<span class="fc" id="L133">                .branch( request.getBranch() )</span>
+<span class="fc" id="L134">                .after( request.getAfter() )</span>
+<span class="fc" id="L135">                .before( request.getBefore() )</span>
+<span class="fc" id="L136">                .compare( request.getCompare() )</span>
+<span class="fc" id="L137">                .build()  ).block();</span>
+<span class="fc" id="L138">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

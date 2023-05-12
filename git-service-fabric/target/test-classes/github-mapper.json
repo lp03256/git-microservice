@@ -1,0 +1,16 @@
+{
+  "branch": "content.repository.default_branch",
+  "commitMessage": "content.commits.message",
+  "commitTime": "content.commits.timestamp",
+  "before": "content.before",
+  "after": "content.after",
+  "changes.added": "content.commits.added",
+  "changes.modified": "content.commits.modified",
+  "changes.removed": "content.commits.removed",
+  "repo.name": "content.repository.name",
+  "repo.url": "content.repository.url",
+  "repo.description": "content.repository.description",
+  "commitBy.name": "content.pusher.name",
+  "commitBy.avatar": "content.sender.avatar_url",
+  "compare": "content.compare"
+}

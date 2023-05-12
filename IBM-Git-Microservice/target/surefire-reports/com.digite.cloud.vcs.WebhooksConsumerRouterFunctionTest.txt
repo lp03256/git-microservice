@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.digite.cloud.vcs.WebhooksConsumerRouterFunctionTest
+-------------------------------------------------------------------------------
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.206 s - in com.digite.cloud.vcs.WebhooksConsumerRouterFunctionTest

@@ -1,0 +1,15 @@
+{
+  "branch": "content.ref",
+  "commitMessage": "content.commits.title",
+  "commitTime": "content.commits.timestamp",
+  "before": "content.before",
+  "after": "content.after",
+  "changes.added": "content.commits.added",
+  "changes.modified": "content.commits.modified",
+  "changes.removed": "content.commits.removed",
+  "repo.name": "content.repository.name",
+  "repo.url": "content.repository.git_http_url",
+  "repo.description": "content.repository.description",
+  "commitBy.name": "content.commits.author.name",
+  "commitBy.avatar": "content.user_avatar"
+}

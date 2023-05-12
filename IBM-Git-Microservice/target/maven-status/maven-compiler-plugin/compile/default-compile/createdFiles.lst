@@ -1,0 +1,14 @@
+com/digite/cloud/vcs/model/WebhookConfig$WebhookConfigBuilder.class
+com/digite/cloud/vcs/resource/WebhookConsumerRestApi$1.class
+com/digite/cloud/vcs/resource/WebhooksConsumerFunctionConfiguration$2.class
+com/digite/cloud/vcs/model/WebhookConfig.class
+com/digite/cloud/vcs/resource/WebhooksConsumerFunctionConfiguration$1.class
+com/digite/cloud/vcs/repository/WebhookConfigRepository.class
+com/digite/cloud/vcs/resource/WebhooksConsumerFunctionConfiguration.class
+com/digite/cloud/vcs/model/WebhookRequest$WebhookRequestBuilder.class
+com/digite/cloud/vcs/resource/WebhooksConsumerTokenHeadersProperties.class
+com/digite/cloud/vcs/resource/WebhookConsumerRestApi.class
+com/digite/cloud/vcs/resource/PayloadLargeException.class
+com/digite/cloud/vcs/model/WebhookConfigResponse.class
+com/digite/cloud/vcs/model/WebhookRequest.class
+com/digite/cloud/vcs/resource/WebhooksConsumerFunctionConfiguration$3.class

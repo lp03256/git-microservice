@@ -1,0 +1,79 @@
+{
+  "object_kind": "push",
+  "event_name": "push",
+  "before": "b113c0681f5c071e8d0b4555bf2194d72a98a118",
+  "after": "da163b29f1bdeee6c6b046f33ae8080094d5e9c5",
+  "ref": "refs/heads/master",
+  "checkout_sha": "da163b29f1bdeee6c6b046f33ae8080094d5e9c5",
+  "message": null,
+  "user_id": 92,
+  "user_name": "Lalit Patil",
+  "user_username": "lpatil",
+  "user_email": "",
+  "user_avatar": "https://secure.gravatar.com/avatar/6cc003f5dcbff991e8dc557de466b776?s=80&d=identicon",
+  "project_id": 203,
+  "project": {
+    "id": 203,
+    "name": "tp",
+    "description": "",
+    "web_url": "https://gitlab.cloud.digite.com/lpatil/tp",
+    "avatar_url": null,
+    "git_ssh_url": "git@gitlab.cloud.digite.com:lpatil/tp.git",
+    "git_http_url": "https://gitlab.cloud.digite.com/lpatil/tp.git",
+    "namespace": "Lalit Patil",
+    "visibility_level": 0,
+    "path_with_namespace": "lpatil/tp",
+    "default_branch": "master",
+    "ci_config_path": null,
+    "homepage": "https://gitlab.cloud.digite.com/lpatil/tp",
+    "url": "git@gitlab.cloud.digite.com:lpatil/tp.git",
+    "ssh_url": "git@gitlab.cloud.digite.com:lpatil/tp.git",
+    "http_url": "https://gitlab.cloud.digite.com/lpatil/tp.git"
+  },
+  "commits": [
+    {
+      "id": "f86451520835d2132889a1ebca14ea5be7a63345",
+      "message": "DEF3 2 Files commit\n",
+      "title": "DEF3 2 Files commit",
+      "timestamp": "2023-02-06T09:41:16+05:30",
+      "url": "https://gitlab.cloud.digite.com/lpatil/tp/-/commit/f86451520835d2132889a1ebca14ea5be7a63345",
+      "author": {
+        "name": "lpatil",
+        "email": "lpatil@digite.com"
+      },
+      "added": [],
+      "modified": [
+        "filebeat.yml",
+        "swiftalk-zookeeper.yaml"
+      ],
+      "removed": []
+    },
+    {
+      "id": "da163b29f1bdeee6c6b046f33ae8080094d5e9c5",
+      "message": "DEF3 New file Commit\n",
+      "title": "DEF3 New file Commit",
+      "timestamp": "2023-02-06T09:41:29+05:30",
+      "url": "https://gitlab.cloud.digite.com/lpatil/tp/-/commit/da163b29f1bdeee6c6b046f33ae8080094d5e9c5",
+      "author": {
+        "name": "lpatil",
+        "email": "lpatil@digite.com"
+      },
+      "added": [],
+      "modified": [
+        "swiftalk-zookeeper.yaml"
+      ],
+      "removed": []
+    }
+  ],
+  "total_commits_count": 2,
+  "push_options": {},
+  "repository": {
+    "name": "tp",
+    "url": "git@gitlab.cloud.digite.com:lpatil/tp.git",
+    "description": "",
+    "homepage": "https://gitlab.cloud.digite.com/lpatil/tp",
+    "git_http_url": "https://gitlab.cloud.digite.com/lpatil/tp.git",
+    "git_ssh_url": "git@gitlab.cloud.digite.com:lpatil/tp.git",
+    "visibility_level": 0
+  }
+}

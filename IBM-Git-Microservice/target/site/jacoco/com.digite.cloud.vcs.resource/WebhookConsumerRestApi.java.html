@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WebhookConsumerRestApi.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Git Jar Specific to IBM</a> &gt; <a href="index.source.html" class="el_package">com.digite.cloud.vcs.resource</a> &gt; <span class="el_source">WebhookConsumerRestApi.java</span></div><h1>WebhookConsumerRestApi.java</h1><pre class="source lang-java linenums">package com.digite.cloud.vcs.resource;
+
+import com.digite.cloud.vcs.model.RequestValidator;
+import com.digite.cloud.vcs.model.WebhookConfig;
+import com.digite.cloud.vcs.model.WebhookConfigResponse;
+import com.digite.cloud.vcs.model.WebhookRequest;
+import com.digite.cloud.vcs.repository.WebhookConfigRepository;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.springdoc.core.fn.builders.operation.Builder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebInputException;
+import reactor.core.publisher.Mono;
+
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import static java.util.logging.Level.FINE;
+import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
+import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
+import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
+import static org.springframework.web.reactive.function.server.RequestPredicates.contentType;
+
+<span class="fc" id="L54">@Slf4j</span>
+@Configuration
+@ConditionalOnExpression(&quot;${digite.cloud.rest.enabled:false}&quot;)
+<span class="fc" id="L57">@RequiredArgsConstructor(onConstructor_ = {@Autowired})</span>
+public class WebhookConsumerRestApi {
+
+    public static final String NOT_FOUND_SUFFIX = &quot; not found&quot;;
+    public static final String TOKEN_KEY_NAME = &quot;token&quot;;
+<span class="fc" id="L62">    private final SecureRandom random = new SecureRandom();</span>
+
+    private final RequestValidator requestValidator;
+    private final WebhooksConsumerTokenHeadersProperties headersProperties;
+    private final WebhookConfigRepository repository;
+
+<span class="fc" id="L68">    @Setter(onMethod_ = @Value(&quot;${digite.cloud.swiftalk.piglet.rest-url:/rest/v1/webhooks/consumers}&quot;))</span>
+    private String restUrl;
+<span class="fc" id="L70">    @Setter(onMethod_ = @Value(&quot;${digite.cloud.swiftalk.piglet.webhook-id:webhookId}&quot;))</span>
+    private String webhookIdPathVar;
+<span class="fc" id="L72">    @Setter(onMethod_ = @Value(&quot;${digite.cloud.swiftalk.piglet.api-version:v1}&quot;))</span>
+    private String currentVersion;
+<span class="fc" id="L74">    @Setter(onMethod_ = @Value(&quot;${digite.cloud.fabric.headers.fabric-auth}&quot;))</span>
+    private String fabricAuthHeader;
+<span class="fc" id="L76">    @Setter(onMethod_ = @Value(&quot;${digite.cloud.fabric.headers.owner-id:X-OWNER-ID}&quot;))</span>
+    private String ownerIdHeader;
+<span class="fc" id="L78">    @Setter(onMethod_ = @Value(&quot;${digite.cloud.swiftalk.piglet.published-host}&quot;))</span>
+    public String publishedHost;
+
+    @SuppressWarnings(&quot;ConstantConditions&quot;)
+    @Bean
+    public RouterFunction&lt;ServerResponse&gt; webhooksApi() {
+<span class="fc" id="L84">        String idRestUrl = restUrl + &quot;/{&quot; + webhookIdPathVar + &quot;}&quot;;</span>
+<span class="fc" id="L85">        return route().POST(restUrl, accept(APPLICATION_JSON), serverRequest -&gt; serverRequest.bodyToMono( WebhookRequest.class)</span>
+<span class="fc" id="L86">                                .switchIfEmpty(Mono.error(new ServerWebInputException(&quot;cannot register webhook with empty body&quot;)))</span>
+<span class="fc" id="L87">                                .doOnNext(requestValidator::validate)</span>
+<span class="fc" id="L88">                                .log(this.getClass().getName(), FINE)</span>
+<span class="fc" id="L89">                                .flatMap(payload -&gt; {</span>
+                                    try {
+<span class="fc" id="L91">                                        log.debug(&quot;{}Registering new webhook {}&quot;, serverRequest.exchange().getLogPrefix(), payload);</span>
+<span class="fc" id="L92">                                        String webhookId = generateWebhookId();</span>
+<span class="fc" id="L93">                                        return repository.save( WebhookConfig.builder()</span>
+<span class="fc" id="L94">                                                .category(payload.getCategory())</span>
+<span class="fc" id="L95">                                                .app(payload.getApp())</span>
+<span class="fc" id="L96">                                                .realmId(serverRequest.headers().firstHeader(fabricAuthHeader).split(&quot;:&quot;)[0])</span>
+<span class="fc" id="L97">                                                .accountId(serverRequest.headers().firstHeader(fabricAuthHeader).split(&quot;:&quot;)[1])</span>
+<span class="fc" id="L98">                                                .projectId(serverRequest.headers().firstHeader(ownerIdHeader))</span>
+<span class="fc" id="L99">                                                .authorId(serverRequest.headers().firstHeader(fabricAuthHeader).split(&quot;:&quot;)[2])</span>
+<span class="fc" id="L100">                                                .authorName(payload.getAuthorName())</span>
+<span class="fc" id="L101">                                                .webhookId(webhookId)</span>
+<span class="fc" id="L102">                                                .tokenHeaderName(headersProperties.getTokenHeaderName(payload.getApp()))</span>
+<span class="fc" id="L103">                                                .tokenHeaderValue(generateToken(String.join(&quot;&quot;, serverRequest.headers().firstHeader(fabricAuthHeader).split(&quot;:&quot;))))</span>
+<span class="fc" id="L104">                                                .build());</span>
+<span class="nc" id="L105">                                    } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException |</span>
+                                             InvalidAlgorithmParameterException | InvalidKeyException |
+                                             IllegalBlockSizeException |
+                                             BadPaddingException e) {
+<span class="nc" id="L109">                                        log.error(&quot;{}Failed generating webhook due to error&quot;, serverRequest.exchange().getLogPrefix(), e);</span>
+<span class="nc" id="L110">                                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, &quot;failed creating webhook, retry&quot;));</span>
+                                    }
+<span class="fc" id="L112">                                }).flatMap(next -&gt; ServerResponse.status(HttpStatus.CREATED)</span>
+<span class="fc" id="L113">                                        .bodyValue(new HashMap&lt;String, String&gt;() {{</span>
+<span class="fc" id="L114">                                            put(&quot;webhook&quot;, publishedHost + &quot;/&quot; + String.join(&quot;/&quot;, &quot;webhooks&quot;, currentVersion, next.getWebhookId()));</span>
+<span class="fc" id="L115">                                            put(TOKEN_KEY_NAME, next.getTokenHeaderValue());</span>
+<span class="fc" id="L116">                                        }}))</span>
+<span class="fc" id="L117">                                .doOnError(throwable -&gt; log.error(&quot;{}Failed creating webhook sue to error {}&quot;, serverRequest.exchange().getLogPrefix(), throwable.getMessage(), throwable)), docs -&gt; {</span>
+<span class="fc" id="L118">                            created201Response.andThen(xFabricCorrelationDocs).andThen(badRequestBodyResponse).andThen(cryptoAlgoFailedResponse).accept(docs);</span>
+<span class="fc" id="L119">                            docs.operationId(&quot;createWebhook&quot;);</span>
+<span class="fc" id="L120">                        }</span>
+<span class="fc" id="L121">                ).build()</span>
+<span class="fc" id="L122">                .and(route().PUT(idRestUrl, contentType(APPLICATION_JSON), serverRequest -&gt; repository.findByWebhookId(serverRequest.pathVariable(webhookIdPathVar))</span>
+<span class="fc" id="L123">                        .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;webhook not found&quot;)))</span>
+<span class="fc" id="L124">                        .log(this.getClass().getName(), FINE)</span>
+<span class="fc" id="L125">                        .map(webhookConfig -&gt; {</span>
+                            try {
+<span class="fc" id="L127">                                return webhookConfig.updateWebhookToken(generateToken(String.join(&quot;&quot;, serverRequest.headers().firstHeader(fabricAuthHeader).split(&quot;:&quot;))));</span>
+<span class="nc" id="L128">                            } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException |</span>
+                                     InvalidAlgorithmParameterException | InvalidKeyException |
+                                     IllegalBlockSizeException |
+                                     BadPaddingException e) {
+<span class="nc" id="L132">                                log.error(&quot;{}Failed generating webhook due to error&quot;, serverRequest.exchange().getLogPrefix(), e);</span>
+<span class="nc" id="L133">                                return Mono.error(new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, &quot;failed updating webhook, retry&quot;));</span>
+                            }
+                        })
+<span class="fc" id="L136">                        .flatMap(webhookConfig -&gt; ServerResponse.ok().bodyValue(webhookConfig))</span>
+<span class="fc" id="L137">                        .doOnError(throwable -&gt; log.error(&quot;{}Failed refreshing webhook token due to error {}&quot;, serverRequest.exchange().getLogPrefix(), throwable.getMessage(), throwable)), docs -&gt; {</span>
+<span class="fc" id="L138">                    docs.parameter(org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder().in(ParameterIn.PATH).name(webhookIdPathVar))</span>
+<span class="fc" id="L139">                            .response(org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder().responseCode(&quot;200&quot;).implementation(WebhookConfig.class));</span>
+<span class="fc" id="L140">                    xFabricCorrelationDocs.andThen(notFound404Response).andThen(cryptoAlgoFailedResponse).accept(docs);</span>
+<span class="fc" id="L141">                    docs.operationId(&quot;updateWebhook&quot;);</span>
+<span class="fc" id="L142">                }).build())</span>
+<span class="fc" id="L143">                .and(route().GET(restUrl, contentType(APPLICATION_JSON), serverRequest -&gt;</span>
+<span class="fc" id="L144">                        repository.findByRealmIdAndAccountIdAndProjectId(serverRequest.headers().firstHeader(fabricAuthHeader).split(&quot;:&quot;)[0],</span>
+<span class="fc" id="L145">                                        serverRequest.headers().firstHeader(fabricAuthHeader).split(&quot;:&quot;)[1],</span>
+<span class="fc" id="L146">                                        serverRequest.headers().firstHeader(ownerIdHeader),</span>
+<span class="fc" id="L147">                                        PageRequest.of(Integer.parseInt(serverRequest.queryParam(&quot;page&quot;).orElse(&quot;0&quot;)), Integer.parseInt(serverRequest.queryParam(&quot;size&quot;).orElse(&quot;10&quot;))))</span>
+<span class="fc" id="L148">                                .log(this.getClass().getName(), FINE)</span>
+<span class="fc" id="L149">                                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;no webhooks configured for this project&quot;)))</span>
+<span class="fc" id="L150">                                .filter(webhookConfig -&gt; {</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                                    if (serverRequest.queryParam(&quot;filter&quot;).isPresent())</span>
+<span class="nc" id="L152">                                        return serverRequest.queryParam(&quot;filter&quot;).get().split(&quot;:&quot;)[1].equals(webhookConfig.getApp());</span>
+                                    else
+<span class="fc" id="L154">                                        return true;</span>
+                                })
+<span class="fc" id="L156">                                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;no webhooks configured for this project&quot;)))</span>
+<span class="fc" id="L157">                                .collectList()</span>
+<span class="fc" id="L158">                                .flatMap(results -&gt; {</span>
+<span class="fc" id="L159">                                    List&lt;WebhookConfigResponse&gt; webhookConfigResponse = results.stream().map( config -&gt; new WebhookConfigResponse(publishedHost + &quot;/&quot; + String.join(&quot;/&quot;, &quot;webhooks&quot;, currentVersion, config.getWebhookId()), config)).collect( Collectors.toList() );</span>
+<span class="fc" id="L160">                                    return ServerResponse.ok().bodyValue(webhookConfigResponse);</span>
+                                })
+<span class="pc" id="L162">                                .doOnError(throwable -&gt; ServerResponse.badRequest().bodyValue(throwable.getMessage())), docs -&gt; {</span>
+<span class="fc" id="L163">                    docs.parameter(org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder().required(false).name(&quot;page&quot;).example(&quot;0&quot;).description(&quot;Page number, default 0&quot;))</span>
+<span class="fc" id="L164">                            .parameter(org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder().required(false).name(&quot;size&quot;).example(&quot;10&quot;).description(&quot;Page size, can be any number between 1 to 20 max, default 10&quot;))</span>
+<span class="fc" id="L165">                            .response(org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder().responseCode(&quot;200&quot;).implementationArray(WebhookConfig.class));</span>
+<span class="fc" id="L166">                    xFabricCorrelationDocs.andThen(notFound404Response).accept(docs);</span>
+<span class="fc" id="L167">                    docs.operationId(&quot;getAllWebhooksForAProject&quot;);</span>
+<span class="fc" id="L168">                }).build())</span>
+<span class="fc" id="L169">                .and(route().GET(idRestUrl, contentType(APPLICATION_JSON), serverRequest -&gt;</span>
+<span class="nc" id="L170">                        repository.findByWebhookId(serverRequest.pathVariable(webhookIdPathVar))</span>
+<span class="nc" id="L171">                                .log(this.getClass().getName(), FINE)</span>
+<span class="nc" id="L172">                                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, serverRequest.pathVariable(webhookIdPathVar) + NOT_FOUND_SUFFIX)))</span>
+<span class="nc" id="L173">                                .flatMap(webhookConfig -&gt; ServerResponse.ok().bodyValue(webhookConfig))</span>
+<span class="nc" id="L174">                                .doOnError(throwable -&gt; ServerResponse.badRequest().bodyValue(throwable.getMessage())), docs -&gt; {</span>
+<span class="fc" id="L175">                    docs.parameter(org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder().in(ParameterIn.PATH).name(webhookIdPathVar))</span>
+<span class="fc" id="L176">                            .response(org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder().responseCode(&quot;200&quot;).implementation(WebhookConfig.class));</span>
+<span class="fc" id="L177">                    xFabricCorrelationDocs.andThen(notFound404Response).accept(docs);</span>
+<span class="fc" id="L178">                    docs.operationId(&quot;getWebhookDetails&quot;);</span>
+<span class="fc" id="L179">                }).build())</span>
+<span class="fc" id="L180">                .and(route().DELETE(idRestUrl, contentType(APPLICATION_JSON), serverRequest -&gt;</span>
+<span class="fc" id="L181">                        repository.findByWebhookId(serverRequest.pathVariable(webhookIdPathVar))</span>
+<span class="fc" id="L182">                                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, serverRequest.pathVariable(webhookIdPathVar) + NOT_FOUND_SUFFIX)))</span>
+<span class="fc" id="L183">                                .log(this.getClass().getName(), FINE)</span>
+<span class="fc" id="L184">                                .flatMap(repository::delete)</span>
+<span class="fc" id="L185">                                .then(ServerResponse.status(HttpStatus.OK).build())</span>
+<span class="fc" id="L186">                                .doOnError(throwable -&gt; log.error(&quot;{}Failed deleting webhook {} due to error {}&quot;, serverRequest.exchange().getLogPrefix(), serverRequest.pathVariable(webhookIdPathVar), throwable.getMessage(), throwable)), docs -&gt; {</span>
+<span class="fc" id="L187">                    docs.parameter(org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder().in(ParameterIn.PATH).name(webhookIdPathVar));</span>
+<span class="fc" id="L188">                    xFabricCorrelationDocs.andThen(notFound404Response).accept(docs);</span>
+<span class="fc" id="L189">                    docs.operationId(&quot;deleteWebhook&quot;);</span>
+<span class="fc" id="L190">                }).build())</span>
+<span class="fc" id="L191">                .filter((request, next) -&gt; {</span>
+<span class="pc bpc" id="L192" title="1 of 4 branches missed.">                    if (request.queryParam(&quot;size&quot;).isPresent() &amp;&amp; Integer.parseInt(request.queryParam(&quot;size&quot;).get()) &gt; 20)</span>
+<span class="fc" id="L193">                        return Mono.error(new ServerWebInputException(&quot;cannot process page size of more than 20&quot;));</span>
+<span class="fc" id="L194">                    return next.handle(request);</span>
+                });
+    }
+
+    private String generateToken(String data) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+
+<span class="fc" id="L200">        SecretKeyFactory factory = SecretKeyFactory.getInstance(&quot;PBKDF2WithHmacSHA256&quot;);</span>
+<span class="fc" id="L201">        KeySpec spec = new PBEKeySpec(data.toCharArray(), generateRandomString().getBytes(), 100000, 128);</span>
+<span class="fc" id="L202">        SecretKey tmp = factory.generateSecret(spec);</span>
+<span class="fc" id="L203">        SecretKeySpec secretKey = new SecretKeySpec(tmp.getEncoded(), &quot;AES&quot;);</span>
+<span class="fc" id="L204">        Cipher cipher = Cipher.getInstance(&quot;AES/CBC/PKCS5Padding&quot;);</span>
+<span class="fc" id="L205">        byte[] iv = new byte[16];</span>
+<span class="fc" id="L206">        random.nextBytes(iv);</span>
+<span class="fc" id="L207">        cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(iv));</span>
+<span class="fc" id="L208">        return Base64.getEncoder()</span>
+<span class="fc" id="L209">                .encodeToString(cipher.doFinal(data.getBytes(StandardCharsets.UTF_8))).replaceAll(&quot;[^\\w\\s]&quot;, &quot;&quot;);</span>
+    }
+
+    private String generateRandomString() {
+<span class="fc" id="L213">        byte[] bytes = new byte[16];</span>
+<span class="fc" id="L214">        random.nextBytes(bytes);</span>
+<span class="fc" id="L215">        return DigestUtils.sha3_224Hex(bytes);</span>
+    }
+
+    @SuppressWarnings(&quot;java:S1612&quot;)
+    private String generateWebhookId() {
+<span class="fc" id="L220">        return random.ints(48, 123)</span>
+<span class="fc bfc" id="L221" title="All 8 branches covered.">                .filter(num -&gt; (num &lt; 58 || num &gt; 64) &amp;&amp; (num &lt; 91 || num &gt; 96))</span>
+<span class="fc" id="L222">                .limit(15)</span>
+<span class="fc" id="L223">                .mapToObj(c -&gt; (char) c)</span>
+<span class="fc" id="L224">                .collect(StringBuffer::new, StringBuffer::append, StringBuffer::append)</span>
+<span class="fc" id="L225">                .toString();</span>
+    }
+
+<span class="fc" id="L228">    private static final Consumer&lt;Builder&gt; created201Response = ops -&gt;</span>
+<span class="fc" id="L229">            ops.response(responseBuilder().responseCode(String.valueOf(HttpStatus.CREATED))</span>
+<span class="fc" id="L230">                    .content(org.springdoc.core.fn.builders.content.Builder.contentBuilder().mediaType(APPLICATION_JSON_VALUE)</span>
+<span class="fc" id="L231">                            .example(org.springdoc.core.fn.builders.exampleobject.Builder.exampleOjectBuilder().name(&quot;webhookId&quot;).value(&quot;cuelohK0ji0za&quot;))));</span>
+
+<span class="fc" id="L233">    private static final Consumer&lt;Builder&gt; notFound404Response = ops -&gt;</span>
+<span class="fc" id="L234">            ops.response(responseBuilder().responseCode(String.valueOf(HttpStatus.NOT_FOUND))</span>
+<span class="fc" id="L235">                    .description(&quot;Specified webhook could not be found&quot;));</span>
+
+<span class="fc" id="L237">    private static final Consumer&lt;Builder&gt; badRequestBodyResponse = ops -&gt; ops</span>
+<span class="fc" id="L238">            .response(responseBuilder().responseCode(String.valueOf(HttpStatus.BAD_REQUEST))</span>
+<span class="fc" id="L239">                    .description(&quot;Request body is missing required fields or not in right format&quot;));</span>
+
+<span class="fc" id="L241">    private static final Consumer&lt;Builder&gt; cryptoAlgoFailedResponse = ops -&gt; ops</span>
+<span class="fc" id="L242">            .response(responseBuilder().responseCode(String.valueOf(HttpStatus.NOT_IMPLEMENTED))</span>
+<span class="fc" id="L243">                    .description(&quot;Failed generating token due to missing encryption algorithms, this is usually a deployment configuration problem&quot;));</span>
+
+<span class="fc" id="L245">    private static final Consumer&lt;Builder&gt; xFabricCorrelationDocs = ops -&gt; {</span>
+<span class="fc" id="L246">        ops.parameter(parameterBuilder().in(ParameterIn.HEADER).name(&quot;X-FABRIC-CORRELATION&quot;)</span>
+<span class="fc" id="L247">                .description(&quot;contains 'realmId:accountId:userId' colon separated&quot;)</span>
+<span class="fc" id="L248">                .example(&quot;THEREALM:THEACCOUNTID:THEUSER&quot;));</span>
+<span class="fc" id="L249">        ops.response(responseBuilder().responseCode(String.valueOf(HttpStatus.UNAUTHORIZED)).description(&quot;Requests missing the X-FABRIC-CORRELATION headers is considered and unauthorized request&quot;));</span>
+<span class="fc" id="L250">    };</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

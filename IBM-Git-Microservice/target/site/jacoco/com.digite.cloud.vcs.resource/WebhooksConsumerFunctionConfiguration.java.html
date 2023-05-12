@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WebhooksConsumerFunctionConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Git Jar Specific to IBM</a> &gt; <a href="index.source.html" class="el_package">com.digite.cloud.vcs.resource</a> &gt; <span class="el_source">WebhooksConsumerFunctionConfiguration.java</span></div><h1>WebhooksConsumerFunctionConfiguration.java</h1><pre class="source lang-java linenums">package com.digite.cloud.vcs.resource;
+
+import com.digite.cloud.vcs.mappings.MappingDataService;
+import com.digite.cloud.vcs.model.*;
+import com.digite.cloud.vcs.repository.GitRepository;
+import com.digite.cloud.vcs.repository.WebhookConfigRepository;
+import com.digite.cloud.vcs.transformer.TransformerService;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.util.unit.DataSize;
+import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.*;
+import java.util.logging.Level;
+
+import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
+import static org.springframework.web.reactive.function.server.RouterFunctions.route;
+
+<span class="fc" id="L35">@Slf4j</span>
+@Configuration
+@ConditionalOnExpression(&quot;${digite.cloud.rest.enabled:false}&quot;)
+<span class="fc" id="L38">@RequiredArgsConstructor(onConstructor_ = {@Autowired})</span>
+public class WebhooksConsumerFunctionConfiguration {
+
+    private final TransformerService transformerService;
+    private final MappingDataService mappingDataService;
+
+    public static final String OWNER_TYPE_KEY = &quot;category&quot;;
+    public static final String OWNER_ID_KEY = &quot;ownerId&quot;;
+    public static final String SOURCE_APP_KEY = &quot;app&quot;;
+    public static final String REALM_ID_KEY = &quot;realmId&quot;;
+
+    public static final String CONTENT_COMMITS = &quot;content.commits[&quot;;
+
+    public static final String COMMITMESSAGE = &quot;commitMessage&quot;;
+
+    public static final String CHANGES_MODIFIED = &quot;changes.modified&quot;;
+
+    public static final String CHANGES_REMOVED = &quot;changes.removed&quot;;
+
+    public static final String CHANGES_ADDED = &quot;changes.added&quot;;
+    public static final String ACCOUNT_ID_KEY = &quot;accountId&quot;;
+    public static final String EVENT_NAME_KEY = &quot;eventName&quot;;
+    public static final String ENTITY_VERSION_KEY = &quot;entityVersion&quot;;
+    public static final String ENTITY_KEY = &quot;entity&quot;;
+
+    public static final String COMMITBY_NAME = &quot;commitBy.name&quot;;
+
+    public static final String COMMIT_TIME = &quot;commitTime&quot;;
+
+    public static final String COMPARE = &quot;compare&quot;;
+
+    private final StreamBridge streamBridge;
+<span class="fc" id="L70">    private final SecureRandom random = new SecureRandom();</span>
+    private final WebhookConfigRepository repository;
+
+    private final GitRepository gitRepository;
+
+    @Value(&quot;${digite.cloud.allowed.payload.size:10KB}&quot;)
+    public String allowedPayloadSize;
+
+<span class="fc" id="L78">    @Setter(onMethod_ = {@Value(&quot;${digite.cloud.fabric.headers.fabric-auth}&quot;)})</span>
+    private String fabricAuthHeader;
+<span class="fc" id="L80">    @Setter(onMethod_ = {@Value(&quot;${digite.cloud.fabric.runtimeEnv:local}&quot;)})</span>
+    private String namespace;
+<span class="fc" id="L82">    @Setter(onMethod_ = {@Value(&quot;${digite.cloud.swiftalk.piglet.kafka.webhook-request-id-header:X-REQUEST-ID}&quot;)})</span>
+    private String webhookRequestIdHeader;
+<span class="fc" id="L84">    @Setter(onMethod_ = {@Value(&quot;${digite.cloud.swiftalk.piglet.webhook-id-path-var:webhookId}&quot;)})</span>
+    private String webhookIdPathVar;
+
+    @Bean
+    public RouterFunction&lt;ServerResponse&gt; webhooksConsumer() {
+        //noinspection UnnecessaryUnboxing
+<span class="fc" id="L90">        return route().POST(&quot;/webhooks/v1/{webhookId}&quot;, accept(MediaType.APPLICATION_JSON), serverRequest -&gt;</span>
+<span class="fc" id="L91">                repository.findByWebhookId(serverRequest.pathVariable(webhookIdPathVar))</span>
+<span class="fc" id="L92">                        .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;webhook does not exist&quot;)))</span>
+<span class="fc" id="L93">                        .doOnNext(webhookConfig -&gt; {</span>
+                            //noinspection ConstantConditions
+<span class="pc bpc" id="L95" title="3 of 4 branches missed.">                            if (!serverRequest.headers().header(webhookConfig.getTokenHeaderName()).isEmpty() &amp;&amp; !serverRequest.headers().firstHeader(webhookConfig.getTokenHeaderName()).equals(webhookConfig.getTokenHeaderValue()))</span>
+<span class="nc" id="L96">                                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, &quot;webhook token header is invalid&quot;);</span>
+<span class="fc" id="L97">                        })</span>
+<span class="fc" id="L98">                        .flatMap(webhookConfig -&gt; serverRequest.bodyToMono(new ParameterizedTypeReference&lt;Map&lt;String, Object&gt;&gt;() {})</span>
+<span class="fc" id="L99">                                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;webhook does not exist&quot;)))</span>
+<span class="fc" id="L100">                                .flatMap(payload -&gt; {</span>
+<span class="fc" id="L101">                                    log.debug(&quot;{}Processing HTTP Payload with key {}&quot;, serverRequest.exchange().getLogPrefix(), serverRequest.pathVariable(webhookIdPathVar));</span>
+
+<span class="fc" id="L103">                                    Map&lt;String, String&gt; webhookProps = new HashMap&lt;String, String&gt;() {{</span>
+<span class="fc" id="L104">                                        put(ACCOUNT_ID_KEY, webhookConfig.getAccountId());</span>
+<span class="fc" id="L105">                                        put(SOURCE_APP_KEY, webhookConfig.getApp());</span>
+<span class="fc" id="L106">                                        put(ENTITY_KEY, &quot;com.digite.cloud.External&quot;);</span>
+<span class="fc" id="L107">                                        put(ENTITY_VERSION_KEY, &quot;0&quot;);</span>
+<span class="fc" id="L108">                                        put(EVENT_NAME_KEY, &quot;webhookPush&quot;);</span>
+<span class="fc" id="L109">                                        put(REALM_ID_KEY, webhookConfig.getRealmId());</span>
+<span class="fc" id="L110">                                        put(OWNER_ID_KEY, webhookConfig.getProjectId());</span>
+<span class="fc" id="L111">                                        put(OWNER_TYPE_KEY, webhookConfig.getCategory());</span>
+<span class="fc" id="L112">                                    }};</span>
+<span class="fc" id="L113">                                    return gitDataProcessor( webhookProps, payload);</span>
+                                }))
+<span class="fc" id="L115">                        .flatMap(sent -&gt; ServerResponse.ok().build())</span>
+<span class="fc" id="L116">                        .log(this.getClass().getName(), Level.FINE)</span>
+<span class="pc" id="L117">                        .doOnError(e -&gt; log.error(&quot;{}Processing webhook Id {} failed due to error {}&quot;, serverRequest.exchange().getLogPrefix(), serverRequest.pathVariable(webhookIdPathVar), e.getMessage(), e))</span>
+        )
+<span class="fc" id="L119">        .build()</span>
+<span class="fc" id="L120">        .filter((request, next) -&gt; {</span>
+<span class="fc" id="L121">            int value = (int)request.headers().contentLength().getAsLong();</span>
+<span class="fc" id="L122">            Long allowedPayloadLimit = DataSize.parse(allowedPayloadSize).toBytes();</span>
+<span class="pc bpc" id="L123" title="2 of 4 branches missed.">            if (request.headers().contentLength().isPresent() &amp;&amp; value &gt; allowedPayloadLimit.intValue())</span>
+<span class="nc" id="L124">                return Mono.error(new PayloadLargeException(&quot;cannot process page size of more than &quot; + allowedPayloadSize));</span>
+<span class="fc" id="L125">            return next.handle(request);</span>
+        });
+    }
+
+    public Mono&lt;List&lt;Git&gt;&gt; gitDataProcessor ( Map&lt;String, String&gt; event, Map&lt;String, Object&gt; content ) {
+<span class="fc" id="L130">        log.debug( &quot;Extracted Fabric Event {}&quot;, event );</span>
+<span class="fc" id="L131">        String app = event.get( &quot;app&quot; );</span>
+
+<span class="fc" id="L133">        String[] params = new String[4];</span>
+<span class="fc" id="L134">        params[0] = event.get( REALM_ID_KEY );</span>
+<span class="fc" id="L135">        params[1] = event.get( ACCOUNT_ID_KEY );</span>
+<span class="fc" id="L136">        params[2] = event.get( OWNER_ID_KEY );</span>
+<span class="fc" id="L137">        params[3] = app;</span>
+
+<span class="fc" id="L139">        ArrayList&lt;Object&gt; commits = (ArrayList&lt;Object&gt;) content.get( &quot;commits&quot; );</span>
+<span class="fc" id="L140">        ArrayList&lt;Mono&lt;Git&gt;&gt; saveMono = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        for (int i = 0; i &lt; commits.size(); i++) {</span>
+<span class="fc" id="L143">            Map&lt;String, String&gt; transformationMap = null;</span>
+<span class="fc" id="L144">            transformationMap = getMappingForProject( app );</span>
+
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            if (&quot;gitlab&quot;.equals( app )) {</span>
+<span class="fc" id="L147">                transformationMap.put( COMMITMESSAGE, CONTENT_COMMITS+i+&quot;].title&quot; );</span>
+<span class="fc" id="L148">                transformationMap.put( COMMITBY_NAME, CONTENT_COMMITS+i+&quot;].author.name&quot; );</span>
+<span class="fc" id="L149">                transformationMap.put( COMPARE, CONTENT_COMMITS+i+&quot;].url&quot; );</span>
+            } else {
+<span class="fc" id="L151">                transformationMap.put( COMMITMESSAGE, CONTENT_COMMITS+i+&quot;].message&quot; );</span>
+            }
+
+<span class="fc" id="L154">            transformationMap.put( COMMIT_TIME, CONTENT_COMMITS+i+&quot;].timestamp&quot; );</span>
+<span class="fc" id="L155">            transformationMap.put( CHANGES_ADDED, CONTENT_COMMITS+i+&quot;].added&quot; );</span>
+<span class="fc" id="L156">            transformationMap.put( CHANGES_MODIFIED, CONTENT_COMMITS+i+&quot;].modified&quot; );</span>
+<span class="fc" id="L157">            transformationMap.put( CHANGES_REMOVED, CONTENT_COMMITS+i+&quot;].removed&quot; );</span>
+
+<span class="fc" id="L159">            log.debug( &quot;Transformation Map {}&quot;, transformationMap );</span>
+
+
+<span class="fc" id="L162">            Map&lt;String, String&gt; result = transformerService.generateFinalJson( new HashMap&lt;String, Object&gt;() {{</span>
+<span class="fc" id="L163">                put(&quot;event&quot;, event);</span>
+<span class="fc" id="L164">                put(&quot;content&quot;, content);</span>
+<span class="fc" id="L165">            }}, transformationMap);</span>
+<span class="fc" id="L166">            log.debug( &quot;Result {}&quot;, result );</span>
+
+<span class="fc" id="L168">            saveMono.add( saveDatainMongo(result, params) );</span>
+        }
+<span class="fc" id="L170">        return Flux.concat(saveMono).collectList();</span>
+    }
+
+    private Map&lt;String, String&gt;  getMappingForProject(String app) {
+<span class="fc" id="L174">        Map&lt;String, String&gt; map = new HashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (&quot;github&quot;.equals( app )) {</span>
+<span class="fc" id="L177">            map.put( &quot;branch&quot;, &quot;content.repository.default_branch&quot; );</span>
+<span class="fc" id="L178">            map.put( &quot;commitMessage&quot;, &quot;content.commits.message&quot; );</span>
+<span class="fc" id="L179">            map.put( &quot;commitTime&quot;, &quot;content.commits.timestamp&quot; );</span>
+<span class="fc" id="L180">            map.put( &quot;before&quot;, &quot;content.before&quot; );</span>
+<span class="fc" id="L181">            map.put( &quot;after&quot;, &quot;content.after&quot; );</span>
+<span class="fc" id="L182">            map.put( &quot;changes.added&quot;, &quot;content.commits.added&quot; );</span>
+<span class="fc" id="L183">            map.put( &quot;changes.modified&quot;, &quot;content.commits.modified&quot; );</span>
+<span class="fc" id="L184">            map.put( &quot;changes.removed&quot;, &quot;content.commits.removed&quot; );</span>
+<span class="fc" id="L185">            map.put( &quot;repo.name&quot;, &quot;content.repository.name&quot; );</span>
+<span class="fc" id="L186">            map.put( &quot;repo.url&quot;, &quot;content.repository.url&quot; );</span>
+<span class="fc" id="L187">            map.put( &quot;repo.description&quot;, &quot;content.repository.description&quot; );</span>
+<span class="fc" id="L188">            map.put( &quot;commitBy.name&quot;, &quot;content.pusher.name&quot; );</span>
+<span class="fc" id="L189">            map.put( &quot;commitBy.avatar&quot;, &quot;content.sender.avatar_url&quot; );</span>
+<span class="fc" id="L190">            map.put( &quot;compare&quot;, &quot;content.compare&quot; );</span>
+        } else {
+<span class="fc" id="L192">            map.put( &quot;branch&quot;, &quot;content.ref&quot; );</span>
+<span class="fc" id="L193">            map.put( &quot;commitMessage&quot;, &quot;content.commits.title&quot; );</span>
+<span class="fc" id="L194">            map.put( &quot;commitTime&quot;, &quot;content.commits.timestamp&quot; );</span>
+<span class="fc" id="L195">            map.put( &quot;before&quot;, &quot;content.before&quot; );</span>
+<span class="fc" id="L196">            map.put( &quot;after&quot;, &quot;content.after&quot; );</span>
+<span class="fc" id="L197">            map.put( &quot;changes.added&quot;, &quot;content.commits.added&quot; );</span>
+<span class="fc" id="L198">            map.put( &quot;changes.modified&quot;, &quot;content.commits.modified&quot; );</span>
+<span class="fc" id="L199">            map.put( &quot;changes.removed&quot;, &quot;content.commits.removed&quot; );</span>
+<span class="fc" id="L200">            map.put( &quot;repo.name&quot;, &quot;content.repository.name&quot; );</span>
+<span class="fc" id="L201">            map.put( &quot;repo.url&quot;, &quot;content.repository.git_http_url&quot; );</span>
+<span class="fc" id="L202">            map.put( &quot;repo.description&quot;, &quot;content.repository.description&quot; );</span>
+<span class="fc" id="L203">            map.put( &quot;commitBy.name&quot;, &quot;content.commits.author.name&quot; );</span>
+<span class="fc" id="L204">            map.put( &quot;commitBy.avatar&quot;, &quot;content.user_avatar&quot; );</span>
+        }
+
+<span class="fc" id="L207">        return map;</span>
+    }
+    private Mono&lt;Git&gt; saveDatainMongo ( Map&lt;String, String&gt; result, String[] params ) {
+<span class="fc" id="L210">        String itemCode = String.valueOf( result.get(COMMITMESSAGE) ).split( &quot; &quot; )[0];</span>
+
+<span class="fc" id="L212">        GitRequest request = GitRequest.builder()</span>
+<span class="fc" id="L213">                .commitMessage( String.valueOf( result.get(COMMITMESSAGE) ) )</span>
+<span class="fc" id="L214">                .commitTime( String.valueOf( result.get(COMMIT_TIME) ) )</span>
+<span class="fc" id="L215">                .before( String.valueOf( result.get( &quot;before&quot; ) ) )</span>
+<span class="fc" id="L216">                .after( String.valueOf( result.get( &quot;after&quot; ) ) )</span>
+<span class="fc" id="L217">                .before( String.valueOf( result.get( &quot;before&quot; ) ) )</span>
+<span class="fc" id="L218">                .compare( String.valueOf( result.get( COMPARE ) ) )</span>
+<span class="fc" id="L219">                .commitName( String.valueOf( result.get( COMMITBY_NAME ) ) )</span>
+<span class="fc" id="L220">                .commitAvatar( String.valueOf( result.get( &quot;commitBy.avatar&quot; ) ) )</span>
+<span class="fc" id="L221">                .name( String.valueOf( result.get( &quot;repo.name&quot; ) ) )</span>
+<span class="fc" id="L222">                .branch( String.valueOf( result.get( &quot;branch&quot; ) )  )</span>
+<span class="fc" id="L223">                .url( String.valueOf( result.get( &quot;repo.url&quot; ) ) )</span>
+<span class="fc" id="L224">                .description( String.valueOf( result.get( &quot;repo.description&quot; ) ) )</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">                .added(result.get( CHANGES_ADDED ).length() &gt; 0 ?</span>
+<span class="pc" id="L226">                        new ArrayList&lt;&gt;( Arrays.asList(result.get( CHANGES_ADDED ).split(&quot;,&quot;))) :  new ArrayList&lt;&gt;()  )</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">                .modified(result.get( CHANGES_MODIFIED ).length() &gt; 0 ?</span>
+<span class="pc" id="L228">                        new ArrayList&lt;&gt;( Arrays.asList(result.get( CHANGES_MODIFIED ).split(&quot;,&quot;))) :  new ArrayList&lt;&gt;()  )</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">                .removed(result.get( CHANGES_REMOVED ).length() &gt; 0 ?</span>
+<span class="pc" id="L230">                        new ArrayList&lt;&gt;( Arrays.asList(result.get( CHANGES_REMOVED ).split(&quot;,&quot;))) : new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L231">                .build();</span>
+
+<span class="fc" id="L233">        return gitRepository.save( Git.builder()</span>
+<span class="fc" id="L234">                .itemCode( itemCode )</span>
+<span class="fc" id="L235">                .accountId(params[1])</span>
+<span class="fc" id="L236">                .ownerId(params[2])</span>
+<span class="fc" id="L237">                .realmId(params[0])</span>
+<span class="fc" id="L238">                .event( &quot;push&quot; )</span>
+<span class="fc" id="L239">                .gitId(String.join(&quot;-&quot;, &quot;W&quot;, String.valueOf(random.nextLong())))</span>
+<span class="fc" id="L240">                .commitMessage( request.getCommitMessage())</span>
+<span class="fc" id="L241">                .commitTime( request.getCommitTime() )</span>
+<span class="fc" id="L242">                .changes( new Changes(request.getAdded().toArray( new String[0] ), request.getModified().toArray( new String[0] ),</span>
+<span class="fc" id="L243">                        request.getRemoved().toArray( new String[0] ) ) )</span>
+<span class="fc" id="L244">                .repo( new Repo( request.getName(), request.getUrl(), request.getDescription()) )</span>
+<span class="fc" id="L245">                .commitBy( new Commitby( request.getCommitName(), request.getCommitAvatar() ) )</span>
+<span class="fc" id="L246">                .branch( request.getBranch() )</span>
+<span class="fc" id="L247">                .after( request.getAfter() )</span>
+<span class="fc" id="L248">                .before( request.getBefore() )</span>
+<span class="fc" id="L249">                .compare( request.getCompare() )</span>
+<span class="fc" id="L250">                .build()  );</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

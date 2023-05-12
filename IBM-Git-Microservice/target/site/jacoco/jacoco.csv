@@ -1,0 +1,14 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Git Jar Specific to IBM,com.digite.cloud.vcs.resource,WebhookConsumerRestApi,95,885,2,12,12,129,6,44,4,39
+Git Jar Specific to IBM,com.digite.cloud.vcs.resource,WebhooksConsumerFunctionConfiguration.new HashMap() {...},0,24,0,0,0,4,0,1,0,1
+Git Jar Specific to IBM,com.digite.cloud.vcs.resource,WebhooksConsumerFunctionConfiguration.new HashMap() {...},0,59,0,0,0,10,0,1,0,1
+Git Jar Specific to IBM,com.digite.cloud.vcs.resource,WebhooksConsumerFunctionConfiguration.new ParameterizedTypeReference() {...},0,6,0,0,0,1,0,1,0,1
+Git Jar Specific to IBM,com.digite.cloud.vcs.resource,WebhooksConsumerFunctionConfiguration,82,730,8,12,2,123,8,19,1,16
+Git Jar Specific to IBM,com.digite.cloud.vcs.resource,WebhooksConsumerTokenHeadersProperties,12,0,0,0,4,0,2,0,2,0
+Git Jar Specific to IBM,com.digite.cloud.vcs.resource,WebhookConsumerRestApi.new HashMap() {...},0,51,0,0,0,4,0,1,0,1
+Git Jar Specific to IBM,com.digite.cloud.vcs.resource,PayloadLargeException,11,0,2,0,3,0,2,0,1,0
+Git Jar Specific to IBM,com.digite.cloud.vcs.model,WebhookConfigResponse,5,71,0,0,0,4,1,17,1,17
+Git Jar Specific to IBM,com.digite.cloud.vcs.model,WebhookRequest.WebhookRequestBuilder,22,28,0,0,0,1,1,5,1,5
+Git Jar Specific to IBM,com.digite.cloud.vcs.model,WebhookRequest,123,47,30,0,1,6,18,6,3,6
+Git Jar Specific to IBM,com.digite.cloud.vcs.model,WebhookConfig,35,173,6,0,6,19,6,18,3,18
+Git Jar Specific to IBM,com.digite.cloud.vcs.model,WebhookConfig.WebhookConfigBuilder,82,100,0,0,0,1,2,15,2,15

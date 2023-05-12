@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.digite.cloud.vcs.WebhookPayloadTests
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.046 s - in com.digite.cloud.vcs.WebhookPayloadTests

@@ -1,0 +1,8 @@
+-------------------------------------------------------------------------------
+Test set: com.digite.cloud.vcs.DocumentArchTests
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 4.193 s <<< FAILURE! - in com.digite.cloud.vcs.DocumentArchTests
+shouldImplementSerializable  Time elapsed: 0.059 s  <<< FAILURE!
+java.lang.AssertionError: Rule 'classes should be assignable to java.io.Serializable' failed to check any classes. This means either that no classes have been passed to the rule at all, or that no classes passed to the rule matched the `that()` clause. To allow rules being evaluated without checking any classes you can either use `ArchRule.allowEmptyShould(true)` on a single rule or set the configuration property `archRule.failOnEmptyShould = false` to change the behavior globally.
+	at com.digite.cloud.vcs.DocumentArchTests$ClassesTests$ThatAreAnnotatedWithDocumentTests.shouldImplementSerializable(DocumentArchTests.java:38)
+
